@@ -4,7 +4,7 @@
 void sig_winch(int);
 
 void init_text_editor();
-static int init_win_text(WINDOW*, WINDOW*);
-static int init_win_menu(WINDOW*, WINDOW*);
+static int init_win_text(WINDOW**, WINDOW**);
+static int init_win_menu(WINDOW**, WINDOW**);
 
 #endif
