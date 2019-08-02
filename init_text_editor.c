@@ -4,9 +4,17 @@
 #include <stdlib.h>
 #include <ncurses.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <unistd.h>
+
 #include "init_text_editor.h"
 
-#define ROW_MENU 4
+#define ROW_MENU 3
+
+#define SIZE_FILE_NAME 25
 
 void sig_winch(int signo)
 {
@@ -24,10 +32,13 @@ void init_text_editor()
 	WINDOW* sub_win_text;
 
 	int act;
+	int fd;
+	int i;
 
 	initscr();
 	signal(SIGWINCH, sig_winch);
 	cbreak();
+	noecho();
 	curs_set(0);
 	refresh();
 
@@ -43,18 +54,23 @@ void init_text_editor()
 	
 	refresh();
 
-	// getch();
+	keypad(sub_win_text, TRUE);
 
-	keypad(sub_win_menu, TRUE);
-
-	do {
-		act = wgetch(sub_win_menu);
+	do {	
+		act = wgetch(sub_win_text);
 
 		if (act == KEY_F(1)) {
-			wmove(sub_win_menu, 1, 0);
-			wprintw(sub_win_menu, "Open file");
-			
-			refresh();
+			fd = open_file(win_text, sub_win_text);
+			if (fd != -1) {
+				wclear(sub_win_text);
+				wrefresh(sub_win_text);
+
+				read_file(fd, win_text, sub_win_text);
+
+				close(fd);
+			}
+
+			// refresh();
 		}
 	} while (act != KEY_F(4));
 
@@ -65,6 +81,61 @@ void init_text_editor()
 	delwin(win_text);
 
 	endwin();
+}
+
+static int read_file(int fd, WINDOW* win_text, WINDOW* sub_win_text)
+{
+	ssize_t size;
+	char* buff;
+	int size_buff;
+	if ((buff = malloc(sizeof(char) * size_buff)) == NULL) {
+		return -1;
+	}
+
+	if ((size = read(fd, buff, size_buff)) == -1) {
+		return -1;
+	}
+
+	wmove(sub_win_text, 0, 0);
+	wprintw(sub_win_text, "%s", buff);
+
+	wmove(sub_win_text, 0, 0);
+
+	free(buff);
+	return 0;
+}
+
+static int open_file(WINDOW* win_text, WINDOW* sub_win_text)
+{
+	int fd;
+	int i;
+	char file_name[SIZE_FILE_NAME + 1];
+
+	echo();
+	curs_set(TRUE);
+	wrefresh(sub_win_text);
+
+	wmove(sub_win_text, 0, 0);
+	wprintw(sub_win_text, "Input file name: ");
+	wgetnstr(sub_win_text, file_name, SIZE_FILE_NAME);
+
+	fd = open(file_name, O_RDWR);
+	if (fd == -1) {
+		noecho();
+		curs_set(FALSE);
+		wmove(sub_win_text, 1, 0);
+		wprintw(sub_win_text, "Error: file not found\n");
+		wprintw(sub_win_text, "Press any key to continue...");
+		wrefresh(sub_win_text);
+		
+		getch();
+
+		wclear(sub_win_text);
+		wrefresh(sub_win_text);
+		return -1;
+	}
+	
+	return fd;
 }
 
 static int init_win_text(WINDOW** win_text, WINDOW** sub_win_text)
@@ -83,8 +154,8 @@ static int init_win_text(WINDOW** win_text, WINDOW** sub_win_text)
 
 	*sub_win_text = derwin(*win_text, row_text - 2, col_text - 2, 1, 1);
 
-	wmove(*sub_win_text, 0, 0);
-	wprintw(*sub_win_text, "Text field");
+	// wmove(*sub_win_text, 0, 0);
+	// wprintw(*sub_win_text, "Text field");
 
 	wrefresh(*win_text);
 
@@ -108,7 +179,7 @@ static int init_win_menu(WINDOW** win_menu, WINDOW** sub_win_menu)
 	*sub_win_menu = derwin(*win_menu, ROW_MENU - 2, col_menu - 2, 1, 1);
 
 	wmove(*sub_win_menu, 0, 0);
-	wprintw(*sub_win_menu, "F1 - open | F2 - save | F3 - close | F10 - exit");
+	wprintw(*sub_win_menu, "F1 - open | F2 - save | F3 - close | F4 - exit\n");
 
 	wrefresh(*win_menu);
 
