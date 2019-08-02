@@ -34,6 +34,8 @@ void init_text_editor()
 	int act;
 	int fd;
 	int i;
+	int f_file_open = 0;
+	int x, y;
 
 	initscr();
 	signal(SIGWINCH, sig_winch);
@@ -59,18 +61,45 @@ void init_text_editor()
 	do {	
 		act = wgetch(sub_win_text);
 
-		if (act == KEY_F(1)) {
+		if ((f_file_open == 0) && (act == KEY_F(1))) {
 			fd = open_file(win_text, sub_win_text);
 			if (fd != -1) {
 				wclear(sub_win_text);
 				wrefresh(sub_win_text);
 
+				f_file_open = 1;
+
 				read_file(fd, win_text, sub_win_text);
-
-				close(fd);
 			}
+		} else if (f_file_open == 1) {
+			if (act == KEY_F(2)) {
+				// save
+			} else if (act == KEY_F(3)) {
+				close(fd);
 
-			// refresh();
+				noecho();
+				curs_set(FALSE);
+				wclear(sub_win_text);
+				wrefresh(sub_win_text);
+
+				f_file_open = 0;
+			} else if (act == KEY_UP) {
+				getyx(sub_win_text, y, x);
+
+				wmove(sub_win_text, y - 1, x);
+			} else if (act == KEY_DOWN) {
+				getyx(sub_win_text, y, x);
+
+				wmove(sub_win_text, y + 1, x);
+			} else if (act == KEY_RIGHT) {
+				getyx(sub_win_text, y, x);
+
+				wmove(sub_win_text, y, x + 1);
+			} else if (act == KEY_LEFT) {
+				getyx(sub_win_text, y, x);
+
+				wmove(sub_win_text, y, x - 1);
+			}
 		}
 	} while (act != KEY_F(4));
 
@@ -128,7 +157,7 @@ static int open_file(WINDOW* win_text, WINDOW* sub_win_text)
 		wprintw(sub_win_text, "Press any key to continue...");
 		wrefresh(sub_win_text);
 		
-		getch();
+		// getch();
 
 		wclear(sub_win_text);
 		wrefresh(sub_win_text);
