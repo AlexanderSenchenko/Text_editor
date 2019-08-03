@@ -36,6 +36,12 @@ void init_text_editor()
 	int i;
 	int f_file_open = 0;
 	int x, y;
+	
+	off_t pos;
+
+	ssize_t size_write;
+
+	chtype ch;
 
 	initscr();
 	signal(SIGWINCH, sig_winch);
@@ -74,29 +80,64 @@ void init_text_editor()
 		} else if (f_file_open == 1) {
 			getyx(sub_win_text, y, x);
 
-			if (act == KEY_F(2)) {
-				// save
-			} else if (act == KEY_F(3)) {
-				close(fd);
+			switch (act) {
+				case KEY_F(2):
+					pos = lseek(fd, 0, SEEK_SET);
+					if (pos == (off_t) -1) {
+						break;
+					}
 
-				noecho();
-				curs_set(FALSE);
-				wclear(sub_win_text);
-				wrefresh(sub_win_text);
+					int max_x, max_y;
+					int curr_x = x;
+					int curr_y = y;
 
-				f_file_open = 0;
-			} else if (act == KEY_UP) {
-				wmove(sub_win_text, y - 1, x);
-			} else if (act == KEY_DOWN) {
-				wmove(sub_win_text, y + 1, x);
-			} else if (act == KEY_RIGHT) {
-				wmove(sub_win_text, y, x + 1);
-			} else if (act == KEY_LEFT) {
-				wmove(sub_win_text, y, x - 1);
-			} else if (act == KEY_BACKSPACE) {
-				wprintw(sub_win_text, " ");
-				wmove(sub_win_text, y, x);
-				wrefresh(sub_win_text);
+					getmaxyx(sub_win_text, max_y, max_x);
+
+					for (y = 0; y < max_y; ++y) {
+						for (x = 0; x < max_x; ++x) {
+							ch = mvwinch(sub_win_text, y, x);
+
+							size_write = write(fd, &ch, 1);
+							if (size_write == -1) {
+								break;
+							} else if (size_write != 1) {
+								break;
+							}
+						}
+					}
+
+					wmove(sub_win_text, curr_y, curr_x);
+
+					break;
+				case KEY_F(3):
+					close(fd);
+
+					noecho();
+					curs_set(FALSE);
+					wclear(sub_win_text);
+					wrefresh(sub_win_text);
+
+					f_file_open = 0;
+					break;
+				case KEY_UP:
+					wmove(sub_win_text, y - 1, x);
+					break;
+				case KEY_DOWN:
+					wmove(sub_win_text, y + 1, x);
+					break;
+				case KEY_RIGHT:
+					wmove(sub_win_text, y, x + 1);
+					break;
+				case KEY_LEFT:
+					wmove(sub_win_text, y, x - 1);
+					break;
+				case KEY_BACKSPACE:
+					wprintw(sub_win_text, " ");
+					wmove(sub_win_text, y, x);
+					wrefresh(sub_win_text);
+					break;
+				default:
+					break;
 			}
 		}
 
