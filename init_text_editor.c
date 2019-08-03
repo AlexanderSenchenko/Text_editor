@@ -72,6 +72,8 @@ void init_text_editor()
 				read_file(fd, win_text, sub_win_text);
 			}
 		} else if (f_file_open == 1) {
+			getyx(sub_win_text, y, x);
+
 			if (act == KEY_F(2)) {
 				// save
 			} else if (act == KEY_F(3)) {
@@ -84,23 +86,21 @@ void init_text_editor()
 
 				f_file_open = 0;
 			} else if (act == KEY_UP) {
-				getyx(sub_win_text, y, x);
-
 				wmove(sub_win_text, y - 1, x);
 			} else if (act == KEY_DOWN) {
-				getyx(sub_win_text, y, x);
-
 				wmove(sub_win_text, y + 1, x);
 			} else if (act == KEY_RIGHT) {
-				getyx(sub_win_text, y, x);
-
 				wmove(sub_win_text, y, x + 1);
 			} else if (act == KEY_LEFT) {
-				getyx(sub_win_text, y, x);
-
 				wmove(sub_win_text, y, x - 1);
+			} else if (act == KEY_BACKSPACE) {
+				wprintw(sub_win_text, " ");
+				wmove(sub_win_text, y, x);
+				wrefresh(sub_win_text);
 			}
 		}
+
+		wrefresh(sub_win_text);
 	} while (act != KEY_F(4));
 
 	delwin(sub_win_menu);
